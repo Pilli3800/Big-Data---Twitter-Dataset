@@ -1,0 +1,87 @@
+from sklearn import decomposition
+from sklearn.feature_extraction.text import TfidfVectorizer
+import pandas as pd
+import numpy as np
+import re
+import nltk
+import emoji
+import importlib
+from nltk.stem.porter import PorterStemmer
+DT = pd.read_csv("Mental-Health-Twitter.csv")
+pd.set_option('display.max_colwidth', None)
+pd.set_option('display.max_rows', 50)
+
+# Preparación de Datos
+# Solo id de usuarios unicas
+print(DT['user_id'].nunique())
+
+# Quitar emojis y simbolos
+stemmer = PorterStemmer()
+
+
+def tokenize(text):
+    text = emoji.replace_emoji(text, replace='')    # Quitar emojis
+    text = re.sub(r"http\S+", "", text)             # Quitar URLs
+    text = re.sub(r"[^\w\s]", "", text)             # Quitar
+    # Tokenizacion y mantiener solo palabras con una longitud de al menos 4 digitos
+    tokens = [word for word in nltk.word_tokenize(text) if len(word) > 3]
+    stems = [stemmer.stem(item)
+             for item in tokens]                       # Stemming
+    return tokens
+
+
+vectorizer_tf = TfidfVectorizer(tokenizer=tokenize, stop_words='english',
+                                max_df=0.75, max_features=10000, use_idf=False, norm=None)
+tf_vectors = vectorizer_tf.fit_transform(DT.post_text)
+
+# Hallando los temas
+
+#print(vectorizer_tf.get_feature_names_out()[100:200])
+
+
+# Creando 25 topicos o clusters
+lda = decomposition.LatentDirichletAllocation(
+    n_components=25, max_iter=10, learning_method='online', learning_offset=50, n_jobs=1, random_state=42)
+
+W1 = lda.fit_transform(tf_vectors)
+H1 = lda.components_
+
+print(W1.shape)
+
+
+# Imprimir las 15 palabras mas relevantes por cada uno de los 25 topicos.
+num_words = 15
+
+vocab = np.array(vectorizer_tf.get_feature_names_out())
+
+
+def top_words(t): return [vocab[i] for i in np.argsort(t)[:-num_words-1:-1]]
+
+
+topic_words = ([top_words(t) for t in H1])
+topics = [' '.join(t) for t in topic_words]
+
+print (topics)
+
+
+colnames = ["Topic" + str(i) for i in range(lda.n_components)]
+docnames = ["Doc" + str(i) for i in range(len(DT.post_text))]
+
+df_doc_topic_pos = pd.DataFrame(np.round(W1,2),columns=colnames,index=docnames)
+significanttopic = np.argmax(df_doc_topic_pos.values,axis=1)
+
+df_doc_topic_pos['dominant_topic'] = significanttopic
+
+
+print(df_doc_topic_pos)
+
+print (df_doc_topic_pos.columns)
+
+df_doc_topic_pos.to_csv("lda_features.csv")
+
+import pyLDAvis
+import pyLDAvis.sklearn
+
+#pyLDAvis.enable_notebook()
+
+pyLDAvis.save_html(pyLDAvis.sklearn.prepare(lda, tf_vectors, vectorizer_tf), 'LDA_Visualization.html')

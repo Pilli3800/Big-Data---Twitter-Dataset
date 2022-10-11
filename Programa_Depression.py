@@ -28,3 +28,4 @@ DT['text_length'] = DT['post_text'].apply(len)
 DT['text_length'].plot(kind='hist', bins=50, figsize=(7, 5))
 print(DT['text_length'].describe())
 plt.show()
+
