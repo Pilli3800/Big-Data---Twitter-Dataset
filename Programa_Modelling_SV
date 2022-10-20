@@ -1,8 +1,6 @@
-import matplotlib.pyplot as plt
 import pyLDAvis.sklearn
 import pyLDAvis
 from sklearn import decomposition
-from sklearn.covariance import log_likelihood
 from sklearn.feature_extraction.text import TfidfVectorizer
 import pandas as pd
 import numpy as np
@@ -42,11 +40,10 @@ tf_vectors = vectorizer_tf.fit_transform(DT.post_text)
 
 # print(vectorizer_tf.get_feature_names_out()[100:200])
 
-# Modelo 1 - Principal
 
 # Creando 25 topicos o clusters
 lda = decomposition.LatentDirichletAllocation(
-    n_components=25, max_iter=10, learning_method='online', learning_decay=0.5,  learning_offset=50, n_jobs=1, random_state=42)
+    n_components=15, max_iter=10, learning_method='online', learning_offset=50, n_jobs=1, random_state=42)
 
 W1 = lda.fit_transform(tf_vectors)
 H1 = lda.components_
@@ -90,58 +87,3 @@ df_doc_topic_pos.to_csv("lda_features.csv")
 
 pyLDAvis.save_html(pyLDAvis.sklearn.prepare(
     lda, tf_vectors, vectorizer_tf), 'LDA_Visualization.html')
-
-# Log Likelyhood: Higher the better
-print("Log Likelihood: ", lda.score(tf_vectors))
-log_likelihood1 = lda.score(tf_vectors)
-# Perplexity: Lower the better. Perplexity = exp(-1. * log-likelihood per word)
-print("Perplexity: ", lda.perplexity(tf_vectors))
-print(lda.get_params())
-
-
-# Modelo 2
-
-# Creando 25 topicos o clusters
-lda2 = decomposition.LatentDirichletAllocation(
-    n_components=20, max_iter=10, learning_method='online', learning_decay=0.7, learning_offset=50, n_jobs=1, random_state=42)
-
-W2 = lda2.fit_transform(tf_vectors)
-H2 = lda2.components_
-
-print(W1.shape)
-
-# Log Likelyhood: Higher the better
-print("Log Likelihood: ", lda2.score(tf_vectors))
-log_likelihood2 = lda2.score(tf_vectors)
-# Perplexity: Lower the better. Perplexity = exp(-1. * log-likelihood per word)
-print("Perplexity: ", lda2.perplexity(tf_vectors))
-print(lda.get_params())
-
-
-# Modelo 3
-
-# Creando 25 topicos o clusters
-lda3 = decomposition.LatentDirichletAllocation(
-    n_components=15, max_iter=10, learning_method='online', learning_decay=0.9, learning_offset=50, n_jobs=1, random_state=42)
-
-W3 = lda3.fit_transform(tf_vectors)
-H3 = lda3.components_
-
-print(W1.shape)
-
-# Log Likelyhood: Higher the better
-print("Log Likelihood: ", lda3.score(tf_vectors))
-log_likelihood3 = lda3.score(tf_vectors)
-# Perplexity: Lower the better. Perplexity = exp(-1. * log-likelihood per word)
-print("Perplexity: ", lda3.perplexity(tf_vectors))
-print(lda.get_params())
-
-n_topics = [25, 20, 15]
-log_likelihoods = [log_likelihood3, log_likelihood2, log_likelihood1]
-plt.figure(figsize=(12, 8))
-plt.plot(log_likelihoods, n_topics,  'ro')
-#plt.scatter(n_topics, log_likelihoods, color=['red', 'green', 'blue'])
-plt.title("Eligiendo el Modelo LDA más óptimo")
-plt.ylabel("Número de Tópicos")
-plt.xlabel("Log Likelyhood Puntaje")
-plt.show()
